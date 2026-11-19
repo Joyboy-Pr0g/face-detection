@@ -1,0 +1,179 @@
+# Face Detection and People Counting under Challenging Imaging Conditions
+
+Digital Image Processing project: comparison of a classical detector (Haar Cascade / Viola-Jones) and a pretrained face-specific YOLO model on the same images, under different illumination conditions and image-enhancement operations.
+
+Guiding question: does an image that looks visually better always produce higher face-detection accuracy?
+
+## Team
+
+| Student number | Name |
+|---|---|
+| `221015221` | `Haithm Alsaeedi` |
+| `2110150105` | `Ahmad fateh allah alrezej` |
+| `221015052` | `Nur Yağmur Beyru` |
+| `<student number 4>` | `<name 4>` |
+
+Individual contributions are described in the report.
+
+## Contents of this folder
+
+```
+N1_N2_N3_N4/
+├── README.md
+├── requirements.txt
+├── config.yaml                 all thresholds and settings (single source of truth)
+├── src/                        source code (see "Source files")
+├── models/                     pretrained model files
+├── dataset/
+│   ├── raw/                    original photos before resizing, one folder per condition
+│   ├── images/                 resized copies used for annotation and every experiment
+│   └── labels/                 ground-truth boxes (YOLO txt format), final and frozen
+├── results/                    CSV tables, figures, run information
+├── results_v1/                 results of the first run, before the label correction (see "Dataset")
+└── report.docx
+```
+
+No images from the internet are included. All photos were taken by the group.
+
+## Environment
+
+- Tested on: Windows 11, Python 3.14.6, Intel Core i7-10510U, 16 GB RAM, **CPU only** (no dedicated GPU).
+- Exact package versions are listed in `requirements.txt`.
+
+Setup (PowerShell, from the project folder):
+
+```
+python -m pip install -r requirements.txt
+```
+
+Notes:
+- The tested OpenCV package is `opencv-contrib-python` 5.1.0. The standard `opencv-python` wheel was blocked by a Windows application-control policy on the development machine. Do not install both packages in the same environment.
+- On Linux, pip may select a large CUDA build of PyTorch. For a CPU-only install, add `--extra-index-url https://download.pytorch.org/whl/cpu`.
+- Run every command from the project folder (the folder that contains `config.yaml`).
+- The GUI uses Tkinter, which is part of the Python installation.
+
+## Pretrained models
+
+| Model | File | Source | Version | License |
+|---|---|---|---|---|
+| Haar Cascade (Viola-Jones), frontal face | `models/haarcascade_frontalface_default.xml` | OpenCV, `data/haarcascades` (https://github.com/opencv/opencv), copied from the installed `opencv-contrib-python` package | OpenCV 5.1.0 | See the license header at the top of the XML file |
+| YOLOv8n-Face (single class `face`, trained on WIDER FACE) | `models/yolov8n-face.pt` | https://github.com/akanametov/yolo-face, release 1.0.0 (file `yolov8n-face.pt`); the same SHA-256 is listed for the YOLOv8n-Face weights of the original work https://github.com/derronqi/yolov8-face in a fork of that repository (`<verify on the derronqi repository before submitting>`) | release 1.0.0 | GPL-3.0 as shown on the akanametov/yolo-face repository page |
+
+SHA-256 of `yolov8n-face.pt`:
+`d545bf1add5aa736a4febac4f4f9245a6d596cd0fe70d5d57989fe0cb9e626ca`
+
+Direct download URL: `https://github.com/akanametov/yolo-face/releases/download/1.0.0/yolov8n-face.pt`
+
+The generic COCO YOLO "person" class is not used anywhere. The YOLO loader refuses any model with more than one class. No model was trained in this project.
+
+## Reproducing the results
+
+Run the commands in this order from the project folder.
+
+```
+python src/download_haar.py
+python src/download_yolo.py
+python src/prepare_dataset.py
+python src/check_dataset.py
+python src/test_evaluation.py
+python src/run_experiments.py
+python src/summarize.py
+python src/sensitivity_iou.py
+python src/analyze_failures.py
+python src/sensitivity_params.py
+python src/benchmark_timing.py
+python src/make_figures.py
+python src/gui.py
+```
+
+| Step | What it does | Main output |
+|---|---|---|
+| `download_haar.py` | Copies the Haar cascade XML from the installed OpenCV into `models/` and prints the OpenCV version | `models/haarcascade_frontalface_default.xml` |
+| `download_yolo.py` | Downloads the YOLO face weights (if missing) and prints size and SHA-256 | `models/yolov8n-face.pt` |
+| `prepare_dataset.py` | Applies EXIF rotation and resizes the originals so the long side is at most 1280 px | `dataset/images/` |
+| `check_dataset.py` | Loads images and labels, prints the true face count per image and per condition, saves overlays of the labels | `results/gt_check/` |
+| `test_evaluation.py` | Hand-computed tests of IoU, matching, TP/FP/FN, precision/recall/F1 | console |
+| `run_experiments.py` | Runs both detectors on the original, brightness/contrast, histogram-equalized and CLAHE versions of every image | `results/per_image.csv`, `results/run_info.json` |
+| `summarize.py` | Dataset-level and per-condition metrics, failure list | `results/summary_overall.csv`, `results/summary_by_condition.csv`, `results/failures.csv` |
+| `sensitivity_iou.py` | Supplementary re-scoring at IoU 0.3, 0.4 and 0.5 | `results/summary_iou_sensitivity.csv` |
+| `analyze_failures.py` | Brightness and contrast of images and of face regions, found versus missed faces | `results/stats_images.csv`, `results/stats_faces.csv` |
+| `sensitivity_params.py` | Parameter sensitivity of both detectors and the brightness/contrast ablation (descriptive only) | `results/sensitivity_params.csv` |
+| `benchmark_timing.py` | Timing benchmark (see "Timing") | `results/timing_raw.csv`, `results/timing_summary.csv` |
+| `make_figures.py` | Histogram figures (faces blurred) and F1 bar chart | `results/figures/` |
+| `gui.py` | Demonstration application | window |
+
+Approximate run times on the development machine: `run_experiments.py` a few minutes, `benchmark_timing.py` 5 to 8 minutes, the others under a few minutes each.
+
+Optional helper scripts: `test_haar.py`, `test_yolo.py`, `test_enhance.py` (single-image checks), `show_failures.py` (draws ground truth in green and predictions in red for one image and detector), `gt_stats.py` (face-size statistics of the labels), `annotate.py` (the annotation tool; the labels are final, do not run it again on this dataset because it re-saves label files with rounding differences).
+
+Example for `show_failures.py`:
+
+```
+python src/show_failures.py haar original far_faces/3
+```
+
+## Graphical demonstration (`src/gui.py`)
+
+1. Wait for the status "Ready" (models are loaded and warmed up at startup).
+2. Choose the source: "Open image..." (file) or "Capture from camera" (grabs one frame).
+3. Optionally tick a preprocessing option: histogram equalization or CLAHE (mutually exclusive), and/or brightness/contrast with the two sliders. Preprocessing is applied in this order: brightness/contrast, then equalization or CLAHE.
+4. Press "Detect". Both detectors run on the preprocessed image; the YOLO and Viola-Jones panels show the boxes (red and green) and the result bar shows the face count of the selected method and the time of each detector for this single run.
+5. The parameter fields (Haar scaleFactor, minNeighbors, minSize; YOLO confidence, NMS IoU) can be changed live. "Reset to config" restores the values from `config.yaml`.
+
+## Configuration (`config.yaml`)
+
+All thresholds are fixed in this file and used identically for every image and every enhancement version. They were not tuned on the test images and are never adjusted per image.
+
+| Setting | Value |
+|---|---|
+| Image size | long side at most 1280 px |
+| Haar | scaleFactor 1.1, minNeighbors 5, minSize 30 x 30, grayscale input |
+| YOLO | confidence 0.25, NMS IoU 0.45, input size 640, device CPU |
+| Brightness/contrast | out = alpha * x + beta, alpha 1.3, beta 30, clipped to 0..255 |
+| Histogram equalization | own NumPy implementation (no library equalization function), applied to the luminance channel (Y of YCrCb) |
+| CLAHE | OpenCV, clip limit 2.0, tile grid 8 x 8, applied to the luminance channel |
+| Evaluation | IoU threshold 0.5 |
+| Timing | 3 warm-up runs, 5 repeats |
+
+Histogram equalization is implemented in `src/enhance.py` (`hist_equalize_gray`) and was verified against `cv2.equalizeHist` (`src/test_enhance.py`, maximum difference 0 on the test image).
+
+## Dataset
+
+- 24 original photos of members of the group, 8 per condition: `normal`, `low_light`, `far_faces` (small faces). 68 annotated faces in total (normal 22, low light 24, far faces 22).
+- Annotation rule: one box per visible face, from the hairline to the chin and ear to ear, as tight as possible; a face is annotated if at least about half of it is visible and it is at least about 20 px wide in the resized image.
+- Labels are in YOLO txt format in `dataset/labels/<condition>/<n>.txt` (one line per face: class id 0, normalized x center, y center, width, height). The number of lines is the true face count.
+- Correction made after the first full run: one visible face in `far_faces/7` had been left out of the labels. It was added according to the written rule, all experiments were rerun, and only the rerun results are reported. The first run is kept in `results_v1/`.
+- While correcting this, the annotation tool re-saved all label files once with rounding differences of up to about 1.4 px, which changed one borderline match for the smallest faces. The resulting labels were frozen and used for all reported results.
+- Consent: `<describe here: all persons appearing in the photos gave informed consent; no minors; no face recognition or identity labeling was performed>`.
+- Figures in the report show blurred faces. The overlays in `results/gt_check/` and `results/failures/` show unblurred faces and are for internal checking only.
+
+## Evaluation protocol
+
+- Predicted boxes are matched one-to-one to ground-truth boxes with IoU >= 0.5 (all pairs above the threshold, taken in order of decreasing IoU, each box used at most once).
+- TP = matched predictions, FP = unmatched predictions, FN = unmatched ground-truth boxes.
+- Precision, recall and F1 are computed from the TP, FP and FN summed over the images (a denominator of 0 gives 0).
+- Absolute counting error per image = |predicted count - true count|; dataset MAE = its mean over the images.
+- The same images, labels, thresholds and enhanced images are used for both detectors.
+
+## Timing
+
+All times are measured on the CPU only, with the images already in memory (reading the file is excluded).
+
+- `detect_ms`: time of the detector call only. Haar: grayscale conversion plus `detectMultiScale`. YOLO: the `predict` call (preprocessing, network, NMS).
+- `enhance_ms`: time of the enhancement operation alone.
+- `e2e_ms`: enhancement + detection + drawing the boxes.
+- `benchmark_timing.py`: all 192 combinations (2 detectors x 4 versions x 24 images) in a shuffled order with random seed 0, repeated 5 times, after 3 warm-up runs per detector. Tables report mean and standard deviation (the standard deviation includes the differences between images).
+- The times shown in the GUI are single runs and are labeled as such.
+- The times stored in `results/per_image.csv` come from the first experiment run, where the versions were not shuffled; use `results/timing_summary.csv` for reported timing.
+
+## Reproducibility notes
+
+- No training is performed. Both detectors are deterministic: the same input and settings give the same boxes.
+- The only random seed is the shuffling seed (0) in `benchmark_timing.py`.
+- `results/run_info.json` stores the configuration, package versions, platform and the timing definition of the main experiment run.
+- `sensitivity_params.py` and `sensitivity_iou.py` run on the same 24 images as the main experiment and are descriptive: the main results use the default settings from `config.yaml`, which were fixed before any result was seen.
+
+## AI assistance
+
+An AI assistant was used for planning, design discussions, explanations. 
+All code was reviewed, run and tested by the students, who are responsible for its correctness and can explain it. Details are in the report.

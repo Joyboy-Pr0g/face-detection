@@ -1,0 +1,11 @@
+,,enhance_ms,enhance_ms,detect_ms,detect_ms,draw_ms,draw_ms,e2e_ms,e2e_ms
+,,mean,std,mean,std,mean,std,mean,std
+detector,variant,,,,,,,,
+haar,bc,32.5,7.7,273.6,92.9,1.2,0.2,307.4,97.1
+haar,clahe,18.9,5.1,343.0,94.2,1.2,0.2,363.2,96.9
+haar,he,22.2,6.1,350.9,81.4,1.3,0.4,374.4,86.8
+haar,original,0.1,0.1,276.3,100.1,1.3,0.4,277.8,100.2
+yolo,bc,33.2,9.5,75.0,52.0,1.7,0.3,110.0,59.4
+yolo,clahe,17.3,5.2,62.6,15.0,1.6,0.2,81.6,18.5
+yolo,he,21.8,6.7,69.3,62.4,1.7,0.4,92.8,65.9
+yolo,original,0.1,0.1,66.3,22.2,1.7,0.4,68.2,22.4

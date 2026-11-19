@@ -1,0 +1,8 @@
+opencv-contrib-python==5.1.0.95
+numpy==2.5.1
+torch==2.13.0
+ultralytics==8.4.215
+pandas
+PyYAML
+Pillow
+matplotlib
