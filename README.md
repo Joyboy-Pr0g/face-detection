@@ -81,7 +81,7 @@ The generic COCO YOLO "person" class is not used anywhere. The YOLO loader refus
 Run the commands in this order from the project folder.
 
 ```
-python src/download.py
+python src/download_haar.py
 python src/download_yolo.py
 python src/prepare_dataset.py
 python src/check_dataset.py
@@ -98,7 +98,7 @@ python src/gui.py
 
 | Step | What it does | Main output |
 |---|---|---|
-| `download.py` | Copies the Haar cascade XML from the installed OpenCV into `models/` and prints the OpenCV version | `models/haarcascade_frontalface_default.xml` |
+| `download_haar.py` | Copies the Haar cascade XML from the installed OpenCV into `models/` and prints the OpenCV version | `models/haarcascade_frontalface_default.xml` |
 | `download_yolo.py` | Downloads the YOLO face weights (if missing) and prints size and SHA-256 | `models/yolov8n-face.pt` |
 | `prepare_dataset.py` | Applies EXIF rotation and resizes the originals so the long side is at most 1280 px | `dataset/images/` |
 | `check_dataset.py` | Loads images and labels, prints the true face count per image and per condition, saves overlays of the labels (not included in the zip) | `results/gt_check/` |
